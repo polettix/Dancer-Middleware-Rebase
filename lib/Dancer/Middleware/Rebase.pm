@@ -1,4 +1,7 @@
 package Dancer::Middleware::Rebase;
+
+# ABSTRACT: a Plack middleware to be used for Dancer
+
 use strict;
 use parent qw( Plack::Middleware );
 use URI ();
