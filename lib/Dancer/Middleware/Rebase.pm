@@ -9,15 +9,14 @@ use URI ();
 sub call {
    my ($self, $env) = @_;
 
-   # prepare cached data
+   # prepare cached data if it's the first call
    if (!$self->{replacement}) {
       my $uri         = URI->new($self->{base});
-      my %replacement = (
+      $self->{replacement} = {
          'psgi.url_scheme' => $uri->scheme(),
-         HTTP_HOST         => $uri->authority(),
-         SCRIPT_NAME       => $uri->path(),
-      );
-      $self->{replacement} = \%replacement;
+         'HTTP_HOST'       => $uri->authority(),
+         'SCRIPT_NAME'     => $uri->path(),
+      };
 
       $self->{strip} = $uri->path()
         if $self->{strip} && substr($self->{strip}, 0, 1) ne '/';
@@ -71,9 +70,9 @@ consider the link to the CSS file in a standard Dancer application:
 
    <link rel="stylesheet" href="<% request.base %>/css/style.css" />
 
-This will be expaned to C<http://internal:3000//css/style.css> which
+This will be expanded to C<http://internal:3000//css/style.css> which
 will not be accessible by the end user. This particular problem
-can be addressed using C<Plack::Middleware::ReverseProxy>, which
+can be addressed using L<Plack::Middleware::ReverseProxy>, which
 massages C<$env> in order to restore the originally requested
 scheme, host and port;
 
@@ -111,7 +110,7 @@ specifically in the Apache configuration.
 =back
 
 Dancer::Middleware::Rebase addresses all these problems at the same time.
-You can set a base URI that will be set in the C<$env> passed to your
+You can set a base URI that will be propagated in the C<$env> passed to your
 application. In particular, it will set all 
 the proper variables that are then used by L<Dancer::Request> methods
 C<base()> and C<uri_for()> in order to establish the URI where all
@@ -120,7 +119,7 @@ stuff can be referred.
 In case you like keeping the prefix part in the Apache configuration,
 anyway, you still have the problem of stripping it before giving it
 to the application. In this case, you can set a C<strip> parameter
-to strip the prefix out of the C<PATH_INFO> component of C<$env>.
+to eliminate the prefix from the C<PATH_INFO> component of C<$env>.
 
 
 =head1 CONFIGURATION
@@ -128,12 +127,14 @@ to strip the prefix out of the C<PATH_INFO> component of C<$env>.
 This module is a C<Plack::Middleware>, so you have to configure it
 inside C<plack_middlewares> like this:
 
-   plack_middlewares
-      - +Dancer::Middleware::Rebase
-      - base
-      - 'http://example.com/app'
-      - strip
-      - 1
+   plack_middlewares:
+      -
+         - "+Dancer::Middleware::Rebase"
+         - base
+         - "http://example.com/app"
+         - strip
+         - 1
+
 
 Please note that you have to put a plus sign before the module name,
 otherwise L<Plack> will think that it is a name to be referred to the
@@ -146,15 +147,16 @@ You can set the following options:
 =item B<< base >>
 
 the URI that has to be set as the base one. This will be what you
-eventually get when you call C<request.base>, and it is thus also
-used as a base for C<uri_for>.
+eventually get when you call C<request.base> in your code and in
+your templates, and it is also used by C<uri_for>.
 
 =item B<< strip >>
 
 either a true value or a string that starts with C</>. In the
 first case, the C<path> portion of the C<base> URI will be used
 as a prefix to be stripped from C<PATH_INFO>, otherwise the
-specified string is used.
+specified string is used. You should only need the first
+approach, anyway.
 
 =back
 
