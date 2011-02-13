@@ -16,6 +16,10 @@ In your config.yml configuration file for Dancer:
           - strip
           - 1
 
+Now all the requests will appear as coming as directed towards
+`http://example.com/app`, where `app` can be optionally stripped away
+so that routes don't have to consider it.
+
 Please note that you have to put a plus sign before the module name,
 otherwise Plack will think that it is a name to be referred to the
 Plack::Middleware namespace.
